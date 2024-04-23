@@ -1,4 +1,4 @@
-__version__ = '0.1.3b1'
+__version__ = '0.1.4b1'
 
 from yaraforge.metadata import pathnames
 from yaraforge.utils.logger import get_global_logger

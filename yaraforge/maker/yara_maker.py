@@ -58,7 +58,16 @@ class YaraMaker:
                 print(f"Address {hex(address)} does not belong to any function.")
                 continue
 
-            md = Cs(CS_ARCH_X86, CS_MODE_64)
+            # 取得目前的架構
+            info = idaapi.get_inf_structure()
+            if info.is_64bit():
+                md = Cs(CS_ARCH_X86, CS_MODE_64)
+            elif info.is_32bit():
+                md = Cs(CS_ARCH_X86, CS_MODE_32)
+            else:
+                print("Unsupported architecture.")
+                continue
+
             md.detail = True
 
             fci = idaapi.FlowChart(func)
