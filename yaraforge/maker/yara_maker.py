@@ -47,7 +47,7 @@ class YaraMaker:
 
         for rule in data:
             address = int(rule.get("Address"), 16)
-            rule_name = rule.get("Rule Name", f"generated_rule_{hex(address)}").replace(' ', '_')
+            rule_name = rule.get("Rule Name", f"generated_rule_{hex(address)}").replace(' ', '_').replace('-', '_')
 
             self.strings = []  # Reset strings list for each rule
             self.comments = []  # Reset comments list for each rule

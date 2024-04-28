@@ -2,6 +2,7 @@ import binascii
 import idaapi
 import idautils
 
+from ..updater.update import check_for_updates
 from ..utils.cache_dumper import DumpAsker
 from ..utils.common import *
 from yaraforge.maker.dump_maker import *
@@ -25,6 +26,7 @@ class YaraForgePlugin(idaapi.plugin_t):
             initialize_logger()
             logger.info("YaraForge plugin initialized")
             print(f"{metadata['plugin_name']} plugin initialized")
+            check_for_updates()
         except Exception as e:
             print(f"Error: Exception occurred during logger initialization, reason: {e}")
         return idaapi.PLUGIN_OK
