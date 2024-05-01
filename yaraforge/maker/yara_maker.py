@@ -1,7 +1,9 @@
 import json
 from datetime import datetime
 from pathlib import Path
+from ida_lines import GENDSM_REMOVE_TAGS
 
+import ida_lines
 import idaapi
 import idc
 from capstone import *
@@ -104,7 +106,7 @@ class YaraMaker:
         """
         formatted_rule_name = f"{rule_name}_{hex(address)}"
         rule_comments = "\n\t/*\n\t" + "\n\t".join([
-            f"{hex(ins['address'])}:\t{ins['bytes'].ljust(40)} ; {ins['mnemonic'].ljust(10)}  {ins['op_str']}"
+            f"{hex(ins['address'])}:\t{ins['bytes'].ljust(40)} ; {ida_lines.generate_disasm_line(ins['address'], GENDSM_REMOVE_TAGS)}"
             for ins in self.instructions_info
         ]) + "\n\t*/\n"
 

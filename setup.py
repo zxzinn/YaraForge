@@ -32,6 +32,8 @@ setup(
     install_requires=[
         'capstone>=5.0.1',
         'flare-capa>=7.0.1',
+        'requests',
+        'packaging'
     ],
     test_suite='yaraforge.tests',
 )
