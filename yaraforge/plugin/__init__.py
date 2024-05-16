@@ -3,13 +3,16 @@ import idaapi
 import idautils
 
 from ..updater.update import check_for_updates
+from ..utils.cache_cleaner import CacheCleaner
 from ..utils.cache_dumper import DumpAsker
 from ..utils.common import *
 from yaraforge.maker.dump_maker import *
 from yaraforge.maker.instruction_maker import InstructionMaker
+from ..utils.compiler import YaraCompiler
 from ..utils.logger import *
 from ..utils.logger import get_global_logger
 from yaraforge.maker.yara_maker import YaraMaker
+from yaraforge.maker.merge_maker import YaraRuleMerger
 
 logger = get_global_logger(pathnames['logger_dir'])
 
@@ -44,6 +47,9 @@ class YaraForgePlugin(idaapi.plugin_t):
 
             file_hex_md5 = binascii.hexlify(idautils.GetInputFileMD5()).decode('ascii').lower()
 
+            cache_cleaner = CacheCleaner(file_hex_md5)
+            cache_cleaner.clear_cache()
+
             # Explore Netnodes
             explore_netnodes()
 
@@ -61,6 +67,13 @@ class YaraForgePlugin(idaapi.plugin_t):
             # Yara Rule Generation
             yara = YaraMaker(file_hex_md5)
             yara.generate_rule()
+
+            # Merge Yara Rules
+            merger = YaraRuleMerger(file_hex_md5)
+            merger.merge()
+
+            yarac = YaraCompiler(file_hex_md5)
+            yarac.ask_for_compiler()
 
             asker = DumpAsker()
             asker.ask_user_for_dump()

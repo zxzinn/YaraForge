@@ -9,6 +9,8 @@ from yaraforge.utils.common import get_desktop_path
 from yaraforge.utils.logger import get_global_logger
 
 logger = get_global_logger(pathnames['logger_dir'])
+
+
 class DumpAsker:
     def __init__(self):
         """

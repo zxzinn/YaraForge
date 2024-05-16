@@ -22,14 +22,14 @@ def _wildcard_bytes(data, offset, length):
     :param data:
     :param offset:
     :param length:
-    :return: Wildcarded bytes
+    :return: Wildcard bytes
     """
     for i in range(offset, offset + length):
         data[i] = "?"
     return data
 
 
-def _process_instruction(ins):
+def _process_instruction(sig_mode, ins):
     """
     Process the instruction
     :param ins:
@@ -37,7 +37,10 @@ def _process_instruction(ins):
     """
     ins_hex_list = list(binascii.hexlify(ins.bytes).decode("ascii").upper())
 
-    ins_hex_list = _wildcard_bytes(ins_hex_list, ins.disp_offset * 2, ins.disp_size * 2)
+    if should_wildcard_imm_operand(sig_mode, ins):
+        ins_hex_list = _wildcard_bytes(ins_hex_list, ins.imm_offset * 2, ins.imm_size * 2)
+    if should_wildcard_disp_operand(sig_mode, ins):
+        ins_hex_list = _wildcard_bytes(ins_hex_list, ins.disp_offset * 2, ins.disp_size * 2)
 
     signature = ''.join(ins_hex_list)
     return signature
@@ -46,3 +49,25 @@ def _process_instruction(ins):
 def format_bytes_with_space(bytes_str):
     """將機器碼字串中每兩個字符之間加入空格"""
     return ' '.join(bytes_str[i:i + 2] for i in range(0, len(bytes_str), 2))
+
+
+def should_wildcard_disp_operand(sig_mode, ins):
+    if sig_mode in ["loose", "normal"]:
+        return True
+    else:
+        return is_jmp_or_call(ins)
+
+
+def should_wildcard_imm_operand(sig_mode, ins):
+    if sig_mode in ["loose"]:
+        return True
+    else:
+        return is_jmp_or_call(ins)
+
+
+def is_jmp_or_call(ins):
+    for group in ins.groups:
+        group_name = ins.group_name(group)
+        if group_name in ["jump", "call"]:
+            return True
+    return False

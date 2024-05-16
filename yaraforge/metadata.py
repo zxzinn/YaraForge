@@ -30,5 +30,7 @@ pathnames = {
     "pretty_dump_dir": yaraforge_base_dir / "cache/results/pretty_dump",  # 添加 pretty_dump_file 的路徑
     "instructions_dir": yaraforge_base_dir / "cache/results/instructions",
     "yara_rules_dir": yaraforge_base_dir / "cache/results/yara_rules",
+    "merged_rules_dir": yaraforge_base_dir / "cache/results/merged_rules",
+    "compiled_rules_dir": yaraforge_base_dir / "cache/results/compiled_rules",
     "logger_dir": yaraforge_base_dir / "logs",
 }

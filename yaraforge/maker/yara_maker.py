@@ -1,4 +1,6 @@
 import json
+import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 from ida_lines import GENDSM_REMOVE_TAGS
@@ -6,6 +8,7 @@ from ida_lines import GENDSM_REMOVE_TAGS
 import ida_lines
 import idaapi
 import idc
+import ida_kernwin
 from capstone import *
 
 from yaraforge.metadata import metadata
@@ -24,7 +27,7 @@ class YaraMaker:
         :return: None
         """
         self.file_hex_md5 = file_hex_md5
-        self.sig_mode = "normal"
+        self.sig_mode = self.ask_user_for_signature_mode()
         self.strings = []
         self.comments = []
         self.metas = {
@@ -78,7 +81,7 @@ class YaraMaker:
                     code_bytes = idc.get_bytes(block.start_ea, block.end_ea - block.start_ea)
                     disasm = md.disasm(code_bytes, block.start_ea)
                     for ins in disasm:
-                        signature = _process_instruction(ins)
+                        signature = _process_instruction(self.sig_mode, ins)
                         formatted_signature = format_hex(signature)
                         all_instructions_signature.append(formatted_signature)
                         bytes_formatted = format_bytes_with_space(ins.bytes.hex().upper())
@@ -98,22 +101,18 @@ class YaraMaker:
 
     def print_rule(self, rule_name, address, signature_str):
         """
-        Print the YARA rule to a file.
-        :param rule_name:
-        :param address:
-        :param signature_str:
-        :return:
+        Print the YARA rule to a file, with special handling for comment block terminators.
         """
         formatted_rule_name = f"{rule_name}_{hex(address)}"
         rule_comments = "\n\t/*\n\t" + "\n\t".join([
-            f"{hex(ins['address'])}:\t{ins['bytes'].ljust(40)} ; {ida_lines.generate_disasm_line(ins['address'], GENDSM_REMOVE_TAGS)}"
+            f"{hex(ins['address'])}:\t{ins['bytes'].ljust(40)} ; {sanitize_comment(ida_lines.generate_disasm_line(ins['address'], GENDSM_REMOVE_TAGS))}"
             for ins in self.instructions_info
         ]) + "\n\t*/\n"
 
         rule_content = f"rule {formatted_rule_name} {{\n"
         rule_content += "  meta:\n"
         for key, value in self.metas.items():
-            # 檢查 value 是否已經是一個字符串，如果是，則在其前後添加引號
+            # Ensure the meta values are properly quoted
             if isinstance(value, str) and not value.startswith("\""):
                 value = f"\"{value}\""
             rule_content += f"    {key} = {value}\n"
@@ -127,7 +126,19 @@ class YaraMaker:
             file.write(rule_content)
         logger.info(f"YARA rule for {formatted_rule_name} has been saved to {yara_rule_path}")
 
+    def ask_user_for_signature_mode(self):
+        title = "Select Signature Mode"
+        result = ida_kernwin.ask_buttons("Normal", "Loose", "Cancel", 0, title)
+
+        if result == 0:  # Loose
+            return "loose"
+        elif result == 1:  # Normal
+            return "normal"
+        return "normal"  # Default or if Cancelled
 
 
-
-
+def sanitize_comment(comment):
+    """
+    Sanitize the comment by replacing problematic comment terminators.
+    """
+    return comment.replace("*/", "(* /)").replace("/*", "(/ *)")

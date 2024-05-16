@@ -40,6 +40,9 @@ pip install yaraforge
 * Tsai YA-HSUAN (aooood456@gmail.com)
 * Ting0525 (zg45154551@gmail.com)
 
+## Special Thanks
+
+We sincerely express our gratitude to [DuckLL](https://github.com/DuckLL), who has devoted considerable attention and patience to mentoring us. His substantial contributions and innovative ideas have significantly shaped the trajectory of this project.
 ## Version Requirements
 
 * Python: >=3.8, <3.12
