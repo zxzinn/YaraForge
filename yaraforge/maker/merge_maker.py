@@ -49,17 +49,31 @@ class YaraRuleMerger:
                     chunk_dict[chunk_hash] = []
                 chunk_dict[chunk_hash].append(rule)
 
+        rule_index = 1
         for chunk_hash, rules in chunk_dict.items():
-            if len(rules) > 1:
-                logger.info(f"Merging {len(rules)} rules for chunk hash: {chunk_hash}")
-                merged_rule = self._merge_rule_contents(rules)
-                rule_count = len(rules)
-                merged_filename = f"{rule_count}_merged_{self._create_rule_name(rules)}.yar"
+            rule_count = len(rules)
+            if rule_count > 1:
+                logger.info(f"Merging {rule_count} rules for chunk hash: {chunk_hash}")
+                merged_rule = self._merge_rule_contents(rules, chunk_dict[chunk_hash][0]['content'], rule_index)
+                chunk_strings_count = self._count_strings_in_chunk(chunk_dict[chunk_hash][0]['content'])
+                if chunk_strings_count > 8000:
+                    logger.warning(
+                        f"Skipping rule with {chunk_strings_count} strings: {self._create_rule_name(rules, chunk_dict[chunk_hash][0]['content'], rule_index)}")
+                    continue
+                merged_filename = self._create_rule_name(rules, chunk_dict[chunk_hash][0]['content'],
+                                                         rule_index) + ".yar"
                 self._save_merged_rule(merged_rule, merged_filename)
+                rule_index += 1
             else:
                 original_filename = Path(rules[0]['file_path']).name
+                chunk_strings_count = self._count_strings_in_chunk(rules[0]['content'])
+                if chunk_strings_count > 8000:
+                    logger.warning(f"Skipping rule with {chunk_strings_count} strings: {original_filename}")
+                    continue
                 logger.info(f"No merging required for {original_filename}, saving as is")
-                self._save_merged_rule(rules[0]['content'], original_filename)
+                original_filename_without_ext = original_filename.split('.')[0]
+                new_filename = f"{original_filename_without_ext}_{chunk_strings_count}.yar"
+                self._save_merged_rule(rules[0]['content'], new_filename)
 
     def _extract_chunks(self, rule_content: str) -> List[str]:
         """
@@ -74,7 +88,7 @@ class YaraRuleMerger:
         """
         return hashlib.sha256(chunk.encode("utf-8")).hexdigest()
 
-    def _merge_rule_contents(self, rules: List[Dict]) -> str:
+    def _merge_rule_contents(self, rules: List[Dict], chunk: str, rule_index: int) -> str:
         if not rules:
             return ""
 
@@ -82,23 +96,31 @@ class YaraRuleMerger:
         version = rules[0]['content'].split('version = ')[1].split('"')[1]
         date_str = datetime.now().strftime('%Y-%m-%d %H:%M')
         hash_str = self.file_hex_md5
-        rule_name = self._create_rule_name(rules)
 
-        merged_rule = f"rule {rule_name} {{\n"
+        chunk_strings_count = self._count_strings_in_chunk(chunk)
+        merged_rule_name = self._create_rule_name(rules, chunk, rule_index)
+
+        merged_rule = f"rule {merged_rule_name} {{\n"
         merged_rule += "  meta:\n"
         merged_rule += f"    generated_by = \"{generated_by}\"\n"
         merged_rule += f"    date = \"{date_str}\"\n"
         merged_rule += f"    version = \"{version}\"\n"
         merged_rule += f"    hash = \"{hash_str}\"\n"
 
-        # 合併注釋，每個注釋獨立放在自己的註解塊中
+        # 為每個原始規則添加獨立的規則名稱和注釋塊,只使用規則地址
+        rule_index = 1
         for rule in rules:
+            rule_path = rule['file_path']
+            rule_address = rule_path.split('\\')[-1].split('.')[0]  # 只取最後一部分並去除文件擴展名
+            rule_name = f"rule_{rule_index} = \"{rule_address}\""
+            merged_rule += f"\n\t{rule_name}\n"
             comment = self._extract_comments(rule['content'])
             if comment:
-                merged_rule += f"  /*\n\t{comment}\n  */\n"
+                merged_rule += f"  /*\n{comment}\n  */\n"
+            rule_index += 1
 
         # 合併 chunks
-        chunks = set(self._extract_chunks(rule['content'])[0] for rule in rules)  # Ensure unique chunks only
+        chunks = set(self._extract_chunks(rule['content'])[0] for rule in rules)
         if chunks:
             chunk_block = "\n    ".join(sorted(chunks))
             merged_rule += f"  strings:\n    {chunk_block}\n"
@@ -125,23 +147,32 @@ class YaraRuleMerger:
                 comments.append("\t" + line)  # Maintain a tab for better formatting
         return "\n".join(comments)
 
-    def _create_rule_name(self, rules):
-        """
-        基於所有規則的文件名創建一個新的規則名稱
-        """
-        names = [Path(rule['file_path']).stem for rule in rules]
-        return '_'.join(sorted(set(names)))
+    def _create_rule_name(self, rules, chunk, rule_index):
+        rule_count = len(rules)
+        chunk_strings_count = self._count_strings_in_chunk(chunk)
 
-    def _save_merged_rule(self, merged_rule: str, file_name: str):
+        return f"Merged_Rule_{rule_index}_{rule_count}times_{chunk_strings_count}"
+
+    def _count_strings_in_chunk(self, chunk):
+        count = 0
+        for line in chunk.split('\n'):
+            line = line.strip()
+            if line and not line.endswith('??'):
+                # 使用正則表達式查找所有的十六進制字串
+                hex_strings = re.findall(r'[0-9A-Fa-f]{2,}', line)
+                count += len(hex_strings)
+        return count
+
+    def _save_merged_rule(self, rule_content: str, filename: str):
         """
-        將合併後的或單一的 YARA 規則保存到檔案中。
+        將合併後的 YARA 規則保存到指定的文件中。
         """
         output_dir = self.merged_rules_dir / self.file_hex_md5
         output_dir.mkdir(parents=True, exist_ok=True)
-        file_path = output_dir / file_name
+        output_file = output_dir / filename
         try:
-            with open(file_path, "w") as f:
-                f.write(merged_rule)
-            logger.info(f"Rule saved successfully: {file_path}")
-        except Exception as e:
-            print(f"Failed to save the rule {file_name} at {output_dir}: {e}")
+            with open(output_file, "w") as f:
+                f.write(rule_content)
+            logger.info(f"Saved merged rule to {output_file}")
+        except IOError as e:
+            logger.error(f"Error writing merged rule to {output_file}: {e}")
