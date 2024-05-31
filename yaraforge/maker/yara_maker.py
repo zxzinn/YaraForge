@@ -20,11 +20,20 @@ logger = get_global_logger(pathnames['logger_dir'])
 
 
 class YaraMaker:
+    """
+    A class to generate YARA rules based on the instructions of a given file.
+
+    This class takes a file hash (MD5) as input and generates YARA rules for the instructions
+    associated with that file. It uses the Capstone disassembly library to process the instructions
+    and generates YARA rules based on the selected signature mode (normal or loose).
+    """
+
     def __init__(self, file_hex_md5):
         """
-        Initialize the YaraMaker object.
-        :param file_hex_md5: The MD5 hash of the file.
-        :return: None
+        Initialize the YaraMaker instance with the file hash (MD5).
+
+        Args:
+            file_hex_md5 (str): The MD5 hash of the file.
         """
         self.file_hex_md5 = file_hex_md5
         self.sig_mode = self.ask_user_for_signature_mode()
@@ -42,8 +51,11 @@ class YaraMaker:
 
     def generate_rule(self):
         """
-        Generate YARA rules for the file.
-        :return: None
+        Main function to generate YARA rules based on the instructions.
+
+        This function reads the instructions from a JSON file, processes each instruction
+        using the selected signature mode, and generates YARA rules for each relevant block
+        of instructions. The generated YARA rules are saved to individual files in the output directory.
         """
         instructions_path = Path(pathnames['instructions_dir']) / f"{self.file_hex_md5}_instructions.json"
 
@@ -54,16 +66,16 @@ class YaraMaker:
             address = int(rule.get("Address"), 16)
             rule_name = rule.get("Rule Name", f"generated_rule_{hex(address)}").replace(' ', '_').replace('-', '_')
 
-            self.strings = []  # Reset strings list for each rule
-            self.comments = []  # Reset comments list for each rule
-            self.instructions_info = []  # Reset instructions_info list for each rule
+            self.strings = []
+            self.comments = []
+            self.instructions_info = []
             all_instructions_signature = []
             func = idaapi.get_func(address)
             if not func:
                 print(f"Address {hex(address)} does not belong to any function.")
                 continue
 
-            # 取得目前的架構
+            # Get the architecture mode
             info = idaapi.get_inf_structure()
             if info.is_64bit():
                 md = Cs(CS_ARCH_X86, CS_MODE_64)
@@ -97,11 +109,16 @@ class YaraMaker:
             if all_instructions_signature:
                 signature_str = "\n\t\t\t".join(all_instructions_signature)
                 self.print_rule(rule_name, address, signature_str)
-        print(f"YARA rules has been saved to {yara_path}")
+        print(f"YARA rules have been saved to {yara_path}")
 
     def print_rule(self, rule_name, address, signature_str):
         """
-        Print the YARA rule to a file, with special handling for comment block terminators.
+        Generate and save the YARA rule to a file.
+
+        Args:
+            rule_name (str): The name of the YARA rule.
+            address (int): The address associated with the YARA rule.
+            signature_str (str): The string representation of the YARA rule signature.
         """
         formatted_rule_name = f"{rule_name}_{hex(address)}"
         rule_comments = "\n\t/*\n\t" + "\n\t".join([
@@ -112,7 +129,6 @@ class YaraMaker:
         rule_content = f"rule {formatted_rule_name} {{\n"
         rule_content += "  meta:\n"
         for key, value in self.metas.items():
-            # Ensure the meta values are properly quoted
             if isinstance(value, str) and not value.startswith("\""):
                 value = f"\"{value}\""
             rule_content += f"    {key} = {value}\n"
@@ -127,6 +143,12 @@ class YaraMaker:
         logger.info(f"YARA rule for {formatted_rule_name} has been saved to {yara_rule_path}")
 
     def ask_user_for_signature_mode(self):
+        """
+        Ask the user to select the signature mode (normal or loose).
+
+        Returns:
+            str: The selected signature mode ("normal" or "loose").
+        """
         title = "Select Signature Mode"
         result = ida_kernwin.ask_buttons("Normal", "Loose", "Cancel", 0, title)
 
@@ -139,6 +161,12 @@ class YaraMaker:
 
 def sanitize_comment(comment):
     """
-    Sanitize the comment by replacing problematic comment terminators.
+    Sanitize the comment by replacing special characters.
+
+    Args:
+        comment (str): The comment to sanitize.
+
+    Returns:
+        str: The sanitized comment.
     """
     return comment.replace("*/", "(* /)").replace("/*", "(/ *)")

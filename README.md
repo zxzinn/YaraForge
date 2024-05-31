@@ -16,7 +16,7 @@ YaraForge is an IDA Pro plugin for generating Yara rules from binary files. It u
 ```shell
 pip install yaraforge
 ```
-2. Copy the `yaraforge.py` file from the `plugin` folder to the `plugins` directory of IDA Pro.
+2. Copy the `yaraforge.py` file from the `yaraforge/plugin` folder to the `plugins` directory of IDA Pro.
 3. Launch IDA Pro, and the YaraForge plugin will be loaded automatically.
 
 ## Usage
@@ -48,6 +48,7 @@ We sincerely express our gratitude to [DuckLL](https://github.com/DuckLL), who h
 * Python: >=3.8, <3.12
 * CAPA: 7.0.1
 * IDA Pro: >=7.0
+* Windows 7/8/10/11
 
 ## License
 * The YaraForge plugin is licensed under the MIT License. For more details, please refer to the [LICENSE](LICENSE) file.
@@ -57,6 +58,7 @@ The development of the YaraForge plugin has received help and inspiration from m
 
 * CAPA: https://github.com/fireeye/capa
 * Capstone: https://github.com/aquynh/capstone
+* mkYARA: https://github.com/fox-it/mkYARA
 * IDA Pro: The well-known commercial decompiler and debugger software
 
 ## Contact Us

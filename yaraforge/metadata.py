@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 appdata_roaming = Path(os.getenv('APPDATA'))
 
-# 定義插件路徑為 IDA Pro 的 plugins 資料夾
 plugin_path = appdata_roaming / "Hex-Rays" / "IDA Pro" / "plugins"
 
 
@@ -27,7 +26,7 @@ pathnames = {
     "yaraforge_dir": yaraforge_base_dir,
     "cache_dir": yaraforge_base_dir / "cache",
     "results_dir": yaraforge_base_dir / "cache/results",
-    "pretty_dump_dir": yaraforge_base_dir / "cache/results/pretty_dump",  # 添加 pretty_dump_file 的路徑
+    "pretty_dump_dir": yaraforge_base_dir / "cache/results/pretty_dump",
     "instructions_dir": yaraforge_base_dir / "cache/results/instructions",
     "yara_rules_dir": yaraforge_base_dir / "cache/results/yara_rules",
     "merged_rules_dir": yaraforge_base_dir / "cache/results/merged_rules",

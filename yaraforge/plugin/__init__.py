@@ -18,6 +18,14 @@ logger = get_global_logger(pathnames['logger_dir'])
 
 
 class YaraForgePlugin(idaapi.plugin_t):
+    """
+    The main plugin class for YaraForge.
+
+    This class defines the plugin's behavior, including initialization, termination, and execution.
+    It orchestrates the various components of YaraForge, such as cache cleaning, pretty dumping,
+    instruction generation, YARA rule generation, and YARA rule merging.
+    """
+
     flags = idaapi.PLUGIN_UNL
     comment = "YaraForge Plugin for IDA Pro Integrated with CAPA and mkYARA."
     help = "YaraForge Plugin"
@@ -25,6 +33,15 @@ class YaraForgePlugin(idaapi.plugin_t):
     wanted_hotkey = "Alt-Y"
 
     def init(self):
+        """
+        Initialize the YaraForge plugin.
+
+        This method is called when the plugin is loaded. It initializes the logger,
+        checks for updates, and prints a message indicating that the plugin has been initialized.
+
+        Returns:
+            int: Always returns idaapi.PLUGIN_OK to indicate successful initialization.
+        """
         try:
             initialize_logger()
             logger.info("YaraForge plugin initialized")
@@ -35,6 +52,12 @@ class YaraForgePlugin(idaapi.plugin_t):
         return idaapi.PLUGIN_OK
 
     def term(self):
+        """
+        Terminate the YaraForge plugin.
+
+        This method is called when the plugin is unloaded. It logs a message indicating
+        that the plugin has been terminated.
+        """
         try:
             logger.info("YaraForge plugin terminated")
             print(f"{metadata['plugin_name']} plugin terminated")
@@ -42,6 +65,16 @@ class YaraForgePlugin(idaapi.plugin_t):
             print(f"Error: Exception occurred during plugin termination, reason: {e}")
 
     def run(self, arg):
+        """
+        Run the YaraForge plugin.
+
+        This method is called when the plugin is executed. It performs the main functionality
+        of YaraForge, including cache cleaning, pretty dumping, instruction generation,
+        YARA rule generation, and YARA rule merging.
+
+        Args:
+            arg: Unused argument passed by IDA Pro.
+        """
         try:
             logger.info("YaraForge plugin run started")
 
@@ -78,12 +111,18 @@ class YaraForgePlugin(idaapi.plugin_t):
             asker = DumpAsker()
             asker.ask_user_for_dump()
 
-
-
         except Exception as e:
             logger.error(f"Error occurred during YaraForge plugin execution: {e}")
             print(f"Error occurred during YaraForge plugin execution: {e}")
 
 
 def PLUGIN_ENTRY():
+    """
+    Entry point for the YaraForge plugin.
+
+    This function is called by IDA Pro to create an instance of the YaraForgePlugin class.
+
+    Returns:
+        YaraForgePlugin: An instance of the YaraForgePlugin class.
+    """
     return YaraForgePlugin()

@@ -15,7 +15,7 @@ YaraForge 是一個 IDA Pro 的插件,用於從二進制文件生成 Yara 規則
 ```shell
 pip install yaraforge
 ```
-2. 將 plugin資料夾內的yaraforge.py 檔案複製到 IDA Pro 的 plugins 目錄中。
+2. 將 `yaraforge/plugin`資料夾內的`yaraforge.py` 檔案複製到 IDA Pro 的 `plugins` 目錄中。
 3. 啟動 IDA Pro,YaraForge 插件會自動加載。
 
 ## 使用方法
@@ -47,6 +47,7 @@ pip install yaraforge
 * Python: >=3.8, <3.12
 * CAPA: 7.0.1
 * IDA Pro: >=7.0
+* Windows 7/8/10/11
 
 ## 許可證
 * YaraForge 插件遵循 MIT 許可證,詳情請參閱 [LICENSE](LICENSE) 文件。
@@ -55,6 +56,7 @@ YaraForge 插件的開發得到了眾多開源項目和社區的幫助和啟發,
 
 * CAPA: https://github.com/fireeye/capa
 * Capstone: https://github.com/aquynh/capstone
+* mkYARA: https://github.com/fox-it/mkYARA
 * IDA Pro: 著名的商業反編譯和調試軟件
 
 ## 聯繫方式

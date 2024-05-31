@@ -12,25 +12,35 @@ logger = get_global_logger(pathnames['logger_dir'])
 
 
 class DumpAsker:
+    """
+    A class to prompt the user to dump the YaraForge cache directory to the desktop.
+
+    This class provides a method to ask the user if they want to dump the YaraForge cache directory
+    to the desktop. If the user agrees, it copies the cache directory to the desktop.
+    """
+
     def __init__(self):
         """
-        Initialize the DumpAsker object.
+        Initialize the DumpAsker instance.
 
-        :return: None
+        This method sets up the paths for the YaraForge cache directory and the desktop directory.
         """
         self.yaraforge_dir_path = Path(pathnames['yaraforge_dir'])
         self.desktop_path = get_desktop_path()
 
     def ask_user_for_dump(self):
         """
-        Ask the user if they want to dump the caches.
-        :return: None
+        Ask the user if they want to dump the YaraForge cache directory to the desktop.
+
+        This method prompts the user with a dialog asking if they want to dump the YaraForge cache
+        directory to the desktop. If the user selects "Yes", it copies the cache directory to the
+        desktop. If the user selects "No", it prints a message indicating that the user chose not
+        to dump the caches.
         """
         answer = ida_kernwin.ask_yn(ida_kernwin.ASKBTN_NO, "Dump Caches on desktop?")
         if answer == ida_kernwin.ASKBTN_YES:
             target_path = os.path.join(self.desktop_path, os.path.basename(self.yaraforge_dir_path))
             try:
-                # 檢查目標路徑是否存在，如果存在則刪除
                 if os.path.exists(target_path):
                     shutil.rmtree(target_path)
                 shutil.copytree(self.yaraforge_dir_path, target_path)

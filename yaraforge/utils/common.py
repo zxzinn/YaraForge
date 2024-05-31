@@ -17,8 +17,10 @@ logger = get_global_logger(pathnames['logger_dir'])
 
 def get_cache_dir():
     """
-    Get the cache directory.
-    :return: The cache directory.
+    Get the cache directory path and create it if it doesn't exist.
+
+    Returns:
+        Path: The cache directory path.
     """
     logger.info("Getting cache directory.")
     cache_dir = Path(pathnames['cache_dir'])  # Convert string to Path object
@@ -28,9 +30,10 @@ def get_cache_dir():
 
 def make_dirs(path_array):
     """
-    Make directories for the given paths.
-    :param path_array: The paths to make directories for.
-    :return: None
+    Create directories specified in the path_array.
+
+    Args:
+        path_array (list): A list of directory paths to create.
     """
     logger.info(f"Making directories for {path_array}.")
     for path in path_array:  # This should be path_array, not pathnames.values()
@@ -46,8 +49,10 @@ def make_dirs(path_array):
 
 def get_desktop_path():
     """
-    Get the path to the desktop.
-    :return: The path to the desktop.
+    Get the desktop path of the current user.
+
+    Returns:
+        str: The desktop path.
     """
     logger.info("Getting desktop path.")
     desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
@@ -56,8 +61,10 @@ def get_desktop_path():
 
 def explore_netnodes():
     """
-    Explore netnodes to find CAPA netnodes.
-    If CAPA netnodes are not found, prompt the user to run CAPA analysis first.
+    Explore netnodes and check for the presence of CAPA netnodes.
+
+    Raises:
+        RuntimeError: If no CAPA netnodes are found or if it fails to start netnode exploration.
     """
     logger.info("Exploring netnodes.")
     n = ida_netnode.netnode()
@@ -90,8 +97,15 @@ def explore_netnodes():
 def custom_json_serializer(o):
     """
     Custom JSON serializer for datetime objects.
-    :param o: The object to serialize.
-    :return: The serialized object.
+
+    Args:
+        o: The object to serialize.
+
+    Returns:
+        str: The serialized representation of the object.
+
+    Raises:
+        TypeError: If the object is not JSON serializable.
     """
     if isinstance(o, datetime):
         logger.info("Using custom JSON serializer for datetime object.")
@@ -103,13 +117,16 @@ def custom_json_serializer(o):
 def get_instructions_for_address(addr):
     """
     Get the instructions for a given address.
-    :param addr:
-    :return: A list of instructions.
+
+    Args:
+        addr (int or str): The address to get instructions for. Can be an integer or a hex string.
+
+    Returns:
+        list: A list of instructions in the format "0x<address>: <disassembly>".
     """
     instructions = []
-    # 確保地址是整數類型
     if isinstance(addr, str):
-        addr = int(addr, 16)  # 假設地址是十六進位字符串，轉換為整數
+        addr = int(addr, 16)
     elif not isinstance(addr, int):
         logger.error(f"Address must be an integer or hex string. Received: {addr}")
         return instructions

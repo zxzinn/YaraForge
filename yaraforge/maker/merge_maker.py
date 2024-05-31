@@ -12,19 +12,42 @@ logger = get_global_logger(pathnames['logger_dir'])
 
 
 class YaraRuleMerger:
+    """
+    A class to merge YARA rules based on the file hash (MD5).
+
+    This class takes a file hash (MD5) as input and scans the corresponding YARA rules directory
+    for rules related to that file. It then merges the rules based on common chunks (strings)
+    and saves the merged rules to a separate directory.
+    """
+
     def __init__(self, file_hex_md5: str):
+        """
+        Initialize the YaraRuleMerger instance with the file hash (MD5).
+
+        Args:
+            file_hex_md5 (str): The MD5 hash of the file.
+        """
         self.file_hex_md5 = file_hex_md5
         self.yara_rules_dir = Path(pathnames['yara_rules_dir'])
         self.merged_rules_dir = Path(pathnames['merged_rules_dir'])
 
     def merge(self):
+        """
+        Main function to merge the YARA rules.
+
+        This function scans the YARA rules directory for rules related to the file hash,
+        merges the rules based on common chunks, and saves the merged rules to a separate directory.
+        """
         self.yara_rules: List[Dict] = []
         self._scan_rules()
         self._merge_rules()
 
     def _scan_rules(self):
         """
-        掃描指定 MD5 的 YARA 規則檔案,並將它們載入到 self.yara_rules 中。
+        Scan the YARA rules directory for rules related to the file hash.
+
+        This function searches the YARA rules directory for rules specific to the file hash
+        and reads the content of each rule file, storing it in the `yara_rules` list.
         """
         rules_dir = self.yara_rules_dir / self.file_hex_md5
         if not rules_dir.exists():
@@ -40,6 +63,13 @@ class YaraRuleMerger:
                 print(f"Error reading file {file}: {e}")
 
     def _merge_rules(self):
+        """
+        Merge the YARA rules based on common chunks.
+
+        This function extracts chunks (strings) from each rule, calculates their hash,
+        and groups the rules with the same chunk hash together. It then merges the rules
+        within each group and saves the merged rules to a separate directory.
+        """
         chunk_dict: Dict[str, List[Dict]] = {}
         for rule in self.yara_rules:
             chunks = self._extract_chunks(rule["content"])
@@ -77,18 +107,41 @@ class YaraRuleMerger:
 
     def _extract_chunks(self, rule_content: str) -> List[str]:
         """
-        使用正則表達式從 YARA 規則中提取所有的 chunk。
+        Extract chunks (strings) from the YARA rule content.
+
+        Args:
+            rule_content (str): The content of the YARA rule.
+
+        Returns:
+            List[str]: A list of chunks (strings) extracted from the rule content.
         """
         pattern = r'(\$\w+\s*=\s*\{[^\}]*\})'
         return re.findall(pattern, rule_content, re.DOTALL)
 
     def _calculate_chunk_hash(self, chunk: str) -> str:
         """
-        計算 chunk 的 SHA-256 雜湊值。
+        Calculate the hash of a chunk (string).
+
+        Args:
+            chunk (str): The chunk (string) to calculate the hash for.
+
+        Returns:
+            str: The SHA-256 hash of the chunk.
         """
         return hashlib.sha256(chunk.encode("utf-8")).hexdigest()
 
     def _merge_rule_contents(self, rules: List[Dict], chunk: str, rule_index: int) -> str:
+        """
+        Merge the contents of multiple YARA rules into a single rule.
+
+        Args:
+            rules (List[Dict]): A list of dictionaries representing the YARA rules to merge.
+            chunk (str): The common chunk (string) shared by the rules.
+            rule_index (int): The index of the merged rule.
+
+        Returns:
+            str: The merged YARA rule content.
+        """
         if not rules:
             return ""
 
@@ -97,7 +150,6 @@ class YaraRuleMerger:
         date_str = datetime.now().strftime('%Y-%m-%d %H:%M')
         hash_str = self.file_hex_md5
 
-        chunk_strings_count = self._count_strings_in_chunk(chunk)
         merged_rule_name = self._create_rule_name(rules, chunk, rule_index)
 
         merged_rule = f"rule {merged_rule_name} {{\n"
@@ -107,11 +159,10 @@ class YaraRuleMerger:
         merged_rule += f"    version = \"{version}\"\n"
         merged_rule += f"    hash = \"{hash_str}\"\n"
 
-        # 為每個原始規則添加獨立的規則名稱和注釋塊,只使用規則地址
         rule_index = 1
         for rule in rules:
             rule_path = rule['file_path']
-            rule_address = rule_path.split('\\')[-1].split('.')[0]  # 只取最後一部分並去除文件擴展名
+            rule_address = rule_path.split('\\')[-1].split('.')[0]
             rule_name = f"rule_{rule_index} = \"{rule_address}\""
             merged_rule += f"\n\t{rule_name}\n"
             comment = self._extract_comments(rule['content'])
@@ -119,7 +170,6 @@ class YaraRuleMerger:
                 merged_rule += f"  /*\n{comment}\n  */\n"
             rule_index += 1
 
-        # 合併 chunks
         chunks = set(self._extract_chunks(rule['content'])[0] for rule in rules)
         if chunks:
             chunk_block = "\n    ".join(sorted(chunks))
@@ -130,7 +180,13 @@ class YaraRuleMerger:
 
     def _extract_comments(self, rule_content: str) -> str:
         """
-        從 YARA 規則中提取注釋部分，不包括註解的開始和結束符號。
+        Extract comments from the YARA rule content.
+
+        Args:
+            rule_content (str): The content of the YARA rule.
+
+        Returns:
+            str: The extracted comments from the rule content.
         """
         comments = []
         lines = rule_content.split("\n")
@@ -148,24 +204,47 @@ class YaraRuleMerger:
         return "\n".join(comments)
 
     def _create_rule_name(self, rules, chunk, rule_index):
+        """
+        Create a name for the merged YARA rule.
+
+        Args:
+            rules (List[Dict]): A list of dictionaries representing the YARA rules to merge.
+            chunk (str): The common chunk (string) shared by the rules.
+            rule_index (int): The index of the merged rule.
+
+        Returns:
+            str: The name of the merged YARA rule.
+        """
         rule_count = len(rules)
         chunk_strings_count = self._count_strings_in_chunk(chunk)
 
         return f"Merged_Rule_{rule_index}_{rule_count}times_{chunk_strings_count}"
 
     def _count_strings_in_chunk(self, chunk):
+        """
+        Count the number of strings in a chunk (string).
+
+        Args:
+            chunk (str): The chunk (string) to count the strings in.
+
+        Returns:
+            int: The number of strings in the chunk.
+        """
         count = 0
         for line in chunk.split('\n'):
             line = line.strip()
             if line and not line.endswith('??'):
-                # 使用正則表達式查找所有的十六進制字串
                 hex_strings = re.findall(r'[0-9A-Fa-f]{2,}', line)
                 count += len(hex_strings)
         return count
 
     def _save_merged_rule(self, rule_content: str, filename: str):
         """
-        將合併後的 YARA 規則保存到指定的文件中。
+        Save the merged YARA rule to a file.
+
+        Args:
+            rule_content (str): The content of the merged YARA rule.
+            filename (str): The name of the file to save the merged rule to.
         """
         output_dir = self.merged_rules_dir / self.file_hex_md5
         output_dir.mkdir(parents=True, exist_ok=True)

@@ -11,20 +11,32 @@ logger = get_global_logger(pathnames['logger_dir'])
 
 
 class DumpMaker:
+    """
+    A class to create a pretty dump of the CAPA analysis results.
+
+    This class takes a file hash (MD5) as input and uses it to load the cached CAPA analysis results.
+    It then creates a pretty dump of the CAPA analysis results in JSON format and saves it to a file.
+    """
+
     def __init__(self, file_hex_md5):
         """
-        Initialize the DumpMaker object.
-        :param file_hex_md5: The MD5 hash of the file.
-        :return: None
+        Initialize the DumpMaker instance with the file hash (MD5).
+
+        Args:
+            file_hex_md5 (str): The MD5 hash of the file.
         """
         self.file_hex_md5 = file_hex_md5
         self.logger = get_global_logger(pathnames['logger_dir'])
 
     def make_pretty_dump(self):
         """
-        Make a pretty dump of the capa results.
+        Main function to create a pretty dump of the CAPA analysis results.
 
-        :return: None
+        This function loads the cached CAPA analysis results, creates a pretty dump in JSON format,
+        and saves it to a file with the naming convention "{file_hash}_pretty_dump.json".
+
+        Returns:
+            self: The DumpMaker instance.
         """
         self.logger.info(f"Starting pretty dump for {self.file_hex_md5}.")
         try:
@@ -42,5 +54,3 @@ class DumpMaker:
         except Exception as e:
             self.logger.error(f"Error during pretty dump: {e}")
         return self
-
-
